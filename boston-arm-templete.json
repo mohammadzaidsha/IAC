@@ -1,0 +1,101 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2021-04-01",
+            "name": "boston-vnet",
+            "location": "eastus",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": ["10.0.0.0/16"]
+                },
+                "subnets": [
+                    {
+                        "name": "boston-subnet",
+                        "properties": {
+                            "addressPrefix": "10.0.1.0/24"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2021-04-01",
+            "name": "boston-nic",
+            "location": "eastus",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "boston-nic-config",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'boston-vnet', 'boston-subnet')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ]
+            },
+            "dependsOn": ["Microsoft.Network/virtualNetworks/boston-vnet"]
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-04-01",
+            "name": "boston-vm-2",
+            "location": "eastus",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_DS1_v2"
+                },
+                "osProfile": {
+                    "computerName": "boston-vm-2",
+                    "adminUsername": "azureuser",
+                    "adminPassword": "Passwd@123"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "ubuntu-24_04-lts",
+                        "sku": "server",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "boston-osdisk",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'boston-nic')]"
+                        }
+                    ]
+                }
+            },
+            "dependsOn": ["Microsoft.Network/networkInterfaces/boston-nic"]
+        },
+        {
+            "type": "Microsoft.DevTestLab/schedules",
+            "apiVersion": "2018-10-15-preview",
+            "name": "shutdown-computevm-boston-vm-2",
+            "location": "eastus",
+            "properties": {
+                "status": "Enabled",
+                "taskType": "ComputeVmShutdownTask",
+                "dailyRecurrence": {
+                    "time": "14:00"
+                },
+                "timeZoneId": "India Standard Time",
+                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', 'boston-vm-2')]"
+            },
+            "dependsOn": ["Microsoft.Compute/virtualMachines/boston-vm-2"]
+        }
+    ]
+}
