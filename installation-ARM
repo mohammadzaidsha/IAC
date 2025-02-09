@@ -1,0 +1,63 @@
+# Add Microsoft's package signing key and repository
+curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
+AZ_REPO=$(lsb_release -cs)
+echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+
+# Update package index and install azure-cli
+sudo apt-get update
+sudo apt-get install azure-cli
+
+
+# to login to azure
+
+az login  # this will open a browser window to login to azure and then you can use the azure cli to interact with azure
+
+# to list all the subscriptions
+
+az account list --output table
+
+# Templetes for creating resources in azure
+https://github.com/Azure/azure-quickstart-templates/blob/master/modules/Microsoft.Storage/storageAccounts/0.9/azuredeploy.json
+
+
+
+
+# to delete the resource group and all the resources in it 
+az group delete --name boston-rg-2 
+
+OR 
+
+az group delete --name boston-rg-2 --yes --no-wait 
+
+
+
+# install terraform on ubuntu
+
+# Add HashiCorp GPG key
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+# Add HashiCorp repository
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+# Update package list
+sudo apt update
+
+# Install Terraform
+sudo apt install terraform
+
+terraform --version
+
+# initalize
+
+terraform init
+
+# validate
+terraform validate
+
+# plan
+terraform plan
+
+
+
+# apply
+terraform apply
