@@ -19,7 +19,9 @@ az account list --output table
 # Templetes for creating resources in azure
 https://github.com/Azure/azure-quickstart-templates/blob/master/modules/Microsoft.Storage/storageAccounts/0.9/azuredeploy.json
 
-
+az group create --name boston-rg --location eastus
+az deployment group validate --resource-group boston-rg --template-file boston-arm-templete.json
+az deployment group create --resource-group boston-rg --template-file boston-arm-templete.json
 
 
 # to delete the resource group and all the resources in it 
@@ -47,6 +49,10 @@ sudo apt install terraform
 
 terraform --version
 
+
+terraform import azurerm_resource_group.boston /subscriptions/4e814c9d-353a-409b-ad61-28ef8ad9baf3/resourceGroups/boston-res-group
+
+
 # initalize
 
 terraform init
@@ -61,3 +67,6 @@ terraform plan
 
 # apply
 terraform apply
+
+
+terraform destroy -auto-approve
