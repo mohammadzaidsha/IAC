@@ -1,6 +1,6 @@
 #terraform init
-#terraform plan -var="client_name=bulbulplay"
-#terraform apply -var="client_name=bulbulplay"
+#terraform plan -var="client_name=boston"
+#terraform apply -var="client_name=boston"
 
 
 # variables.tf
