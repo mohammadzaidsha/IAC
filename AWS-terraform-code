@@ -1,0 +1,97 @@
+#terraform init
+#terraform plan -var="client_name=bulbulplay"
+#terraform apply -var="client_name=bulbulplay"
+
+
+# variables.tf
+variable "client_name" {
+  description = "The client name used for resource naming"
+  type        = string
+}
+
+# provider.tf
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "aws" {
+  region     = "ap-south-1"
+  access_key = "your-access-key"  # Recommend using environment variables instead
+  secret_key = "your-secret-key"  # See security note below
+}
+
+# keypair.tf
+resource "tls_private_key" "client_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "client_key_pair" {
+  key_name   = "${var.client_name}_key"
+  public_key = tls_private_key.client_key.public_key_openssh
+}
+
+resource "local_file" "private_key" {
+  content  = tls_private_key.client_key.private_key_pem
+  filename = "${var.client_name}.pem"
+  file_permission = "0400"
+}
+
+# security-group.tf
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_security_group" "default" {
+  name   = "default"
+  vpc_id = data.aws_vpc.default.id
+}
+
+resource "aws_security_group_rule" "client_rules" {
+  for_each = {
+    ssh  = { port = 22 }
+    http = { port = 80 }
+    https = { port = 443 }
+  }
+
+  security_group_id = data.aws_security_group.default.id
+  type              = "ingress"
+  from_port         = each.value.port
+  to_port           = each.value.port
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "${var.client_name} rule for ${each.key}"
+}
+
+# instances.tf
+resource "aws_instance" "instance" {
+  count         = 2
+  ami           = "ami-06b6e5225d1db5f46"
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.client_key_pair.key_name
+  vpc_security_group_ids = [data.aws_security_group.default.id]
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp2"
+  }
+
+  tags = {
+    Name = "${var.client_name}_resource_${count.index + 1}"
+  }
+}
+
+# outputs.tf
+output "private_key_pem" {
+  value     = tls_private_key.client_key.private_key_pem
+  sensitive = true
+}
+
+output "instance_public_ips" {
+  value = aws_instance.instance[*].public_ip
+}
